@@ -11,6 +11,7 @@ from trainer import Trainer
 
 
 def main(args):
+    
     cfg_data_file = os.path.join("./configs/data", args.data + "coco_lt.yaml")
     cfg_model_file = os.path.join("./configs/model", args.model + "clip_vit_b16_peft.yaml")
 
@@ -19,7 +20,9 @@ def main(args):
     cfg.merge_from_file(cfg_model_file)
     cfg.merge_from_list(args.opts)
     # cfg.freeze()
-
+    cfg.T = args.T
+    cfg.sparse_topk = args.sparse_topk
+    cfg.reweight_p = args.reweight_p
     if cfg.output_dir is None:
         cfg_name = "_".join([args.data, args.model])
         opts_name = "".join(["_" + item for item in args.opts])
@@ -82,5 +85,8 @@ if __name__ == "__main__":
     parser.add_argument("--model", "-m", type=str, default="", help="model config file")
     parser.add_argument("opts", default=None, nargs=argparse.REMAINDER,
                         help="modify config options using the command-line")
+    parser.add_argument("--reweight_p", "-rp", type=float, default=0.1, help="")
+    parser.add_argument("--sparse_topk", "-st", type=int, default=60, help="")
+    parser.add_argument("--T", "-T", type=float, default=0.6, help="")
     args = parser.parse_args()
     main(args)

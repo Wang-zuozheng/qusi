@@ -175,7 +175,8 @@ class Trainer:
         self.cfg = cfg
         self.build_data_loader()
         self.build_model()
-        self.relation = self.build_relation()
+        self.build_relation()
+        self.relation_process(cfg)
         self.evaluator = Evaluator(cfg, self.many_idxs, self.med_idxs, self.few_idxs)
         self._writer = None
 
@@ -400,14 +401,14 @@ class Trainer:
             self.criterion = LADELoss(cls_num_list=self.cls_num_list)
         elif cfg.loss_type == "DBLoss": # https://arxiv.org/abs/1708.02002
             if 'COCO' in cfg.root:
-                freq_file = '/home/wzz/LMPT/data/coco/class_freq.pkl'
+                freq_file = 'data/coco/class_freq.pkl'
                 self.criterion = DBLoss(
                         freq_file=freq_file,
                         weight=None, gamma1=4.0, gamma2=0.0,
                         logit_reg=dict(neg_scale=2.0, init_bias=0.05),
                     )
             else:
-                freq_file='/home/wzz/LMPT/data/voc/class_freq.pkl'
+                freq_file='data/voc/class_freq.pkl'
                 self.criterion = ResampleLoss(
                     use_sigmoid=True,
                     reweight_func='rebalance',
@@ -421,8 +422,26 @@ class Trainer:
         prompts = self.get_tokenized_prompts(self.classnames, template = "a photo of a {}.")
         class_features = self.model.encode_text(prompts)
         class_features = F.normalize(class_features, dim=-1)
-        matrix = class_features @ class_features.T
-        return matrix
+        self.relation = class_features @ class_features.T
+    
+    def relation_process(self, cfg):
+        _ ,max_idx = torch.topk(self.relation, cfg.sparse_topk)
+        mask = torch.ones_like(self.relation).type(torch.bool)
+        for i, idx in enumerate(max_idx):
+            mask[i][idx] = 0
+        self.relation[mask] = 0
+        sparse_mask = mask
+        dialog = torch.eye(self.num_classes).type(torch.bool)
+        self.relation[dialog] = 0
+        self.relation = self.relation / torch.sum(self.relation, dim=1).reshape(-1, 1) * cfg.reweight_p
+        self.relation[dialog] = 1-cfg.reweight_p
+
+        self.gcn_relation = self.relation.clone()
+        assert(self.gcn_relation.requires_grad == False)
+        self.relation = torch.exp(self.relation/cfg.T) / torch.sum(torch.exp(self.relation/cfg.T), dim=1).reshape(-1,1)
+        self.relation[sparse_mask] = 0
+        self.relation = self.relation / torch.sum(self.relation, dim=1).reshape(-1, 1)
+        
         
     def get_tokenized_prompts(self, classnames, template = "a photo of a {}."):
         prompts = [template.format(c.replace("_", " ")) for c in classnames]
@@ -676,7 +695,7 @@ class Trainer:
             # _bsz, _ncrops, _c, _h, _w = image.size()
             # image = image.view(_bsz * _ncrops, _c, _h, _w)
 
-            output = self.model(image, return_feature=True)
+            output = self.model(image, return_feature=True, gcn_relation=self.relation)
             # output = output.view(_bsz, _ncrops, -1).mean(dim=1)
 
             label, pred = self.evaluator.process(output, label)

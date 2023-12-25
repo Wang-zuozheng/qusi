@@ -85,6 +85,7 @@ class PeftModelFromCLIP(nn.Module):
         if self.gcn is not None:
             identity = text_features
             text_features = self.gcn(text_features, gcn_relation)
+        text_features += identity
         logit_scale = self.logit_scale.exp()
         image_features= image_features / image_features.norm(dim=-1,
                                                                 keepdim=True)    

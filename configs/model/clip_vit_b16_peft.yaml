@@ -38,7 +38,11 @@ init_head: "text_feat"
 test_ensemble: True
 expand: 24
 is_gcn: True
-in_features: 1024
+in_features: 512
 mid_features: 2048
 n_ctx: 4
 ctx_init: a photo of a
+
+sparse_topk: 60
+reweight_p: 0.2
+T: 0.3

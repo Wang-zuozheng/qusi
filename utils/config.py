@@ -30,7 +30,9 @@ _C.micro_batch_size = 128  # for gradient accumulation, must be a divisor of bat
 _C.lr = 0.01
 _C.weight_decay = 5e-4
 _C.momentum = 0.9
-
+_C.sparse_topk = 60
+_C.reweight_p = 0.2
+_C.T = 0.3
 _C.gcn_lr = 0.01
 _C.gcn_weight_decay = 5e-4
 _C.gcn_momentum = 0.9
