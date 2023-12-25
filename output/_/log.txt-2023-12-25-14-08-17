@@ -1,0 +1,75 @@
+** Config **
+adapter: False
+adapter_dim: None
+adaptformer: True
+backbone: CLIP-ViT-B/16
+batch_size: 32
+bias_tuning: False
+bn_tuning: False
+classifier: CosineClassifier
+ctx_init: a photo of a
+data_path_train: /home/wzz/COCO/train2017
+data_path_val: /home/wzz/COCO/val2017
+dataset: 
+deterministic: True
+expand: 24
+full_tuning: False
+gpu: 0
+imb_factor: None
+in_features: 1024
+init_head: text_feat
+is_gcn: True
+ln_tuning: False
+lora: False
+loss_type: DBLoss
+lr: 0.0001
+micro_batch_size: 32
+mid_features: 2048
+model_dir: None
+momentum: 0.9
+n_ctx: 4
+num_epochs: 120
+num_workers: 8
+output_dir: ./output/_
+partial: None
+prec: amp
+print_freq: 10
+resolution: 224
+root: /home/wzz/COCO
+scale: 25
+seed: 33
+ssf_attn: False
+ssf_ln: False
+ssf_mlp: False
+test_ensemble: True
+test_only: False
+test_path: annotations/instances_val2017.json
+test_train: False
+train_path: /home/wzz/SCPNet/dataset/coco_lt_train.txt
+vpt_deep: False
+vpt_len: None
+vpt_shallow: False
+weight_decay: 0.0001
+zero_shot: False
+************
+Setting fixed seed: 33
+mean: [0.48145466, 0.4578275, 0.40821073]
+std: [0.26862954, 0.26130258, 0.27577711]
+loading annotations into memory...
+Done (t=0.85s)
+creating index...
+index created!
+Building model
+Loading CLIP (backbone: CLIP-ViT-B/16)
+Adapter bottle dimension set to 2
+Turning off gradients in the model
+Turning on gradients in the prompt
+Turning on gradients in the tuner
+Turning on gradients in the head
+Turning on gradients in the gcn
+Total params: 158137381
+Tuned params: 64548
+Head params: 61440
+Gcn params: 8388608
+Initialize head with text features
+Initialize tensorboard (log_dir=./output/_/tensorboard)

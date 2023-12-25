@@ -1,0 +1,44 @@
+backbone: "CLIP-ViT-B/16"
+resolution: 224
+
+output_dir: null
+print_freq: 10
+
+seed: 33
+deterministic: True
+gpu: 0
+num_workers: 8
+prec: "amp"
+
+num_epochs: 120
+batch_size: 32
+micro_batch_size: 32
+lr: 1e-4 # 1e-4 #0.01
+weight_decay: 1e-4 #1e-4 #5e-4
+momentum: 0.9
+gcn_lr: 1e-3 # 1e-4 #0.01
+gcn_weight_decay: 1e-4 #1e-4 #5e-4
+gcn_momentum: 0.9
+loss_type: "DBLoss"
+classifier: "CosineClassifier"
+
+full_tuning: False
+bias_tuning: False
+ln_tuning: False
+vpt_shallow: False
+vpt_deep: False
+adapter: False
+adaptformer: True
+lora: False
+ssf_attn: False
+ssf_mlp: False
+ssf_ln: False
+
+init_head: "text_feat"
+test_ensemble: True
+expand: 24
+is_gcn: True
+in_features: 1024
+mid_features: 2048
+n_ctx: 4
+ctx_init: a photo of a

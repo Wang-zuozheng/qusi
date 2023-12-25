@@ -1,0 +1,302 @@
+** Config **
+adapter: False
+adapter_dim: None
+adaptformer: False
+backbone: CLIP-ViT-B/16
+batch_size: 32
+bias_tuning: False
+bn_tuning: False
+classifier: CosineClassifier
+ctx_init: a photo of a
+data_path_train: /home/wzz/COCO/train2017
+data_path_val: /home/wzz/COCO/val2017
+dataset: 
+deterministic: True
+expand: 24
+full_tuning: False
+gpu: 0
+imb_factor: None
+init_head: text_feat
+ln_tuning: False
+lora: False
+loss_type: Focal
+lr: 0.0001
+micro_batch_size: 32
+model_dir: None
+momentum: 0.9
+n_ctx: 4
+num_epochs: 120
+num_workers: 8
+output_dir: ./output/_
+partial: None
+prec: amp
+print_freq: 10
+resolution: 224
+root: /home/wzz/COCO
+scale: 25
+seed: 33
+ssf_attn: False
+ssf_ln: False
+ssf_mlp: False
+test_ensemble: True
+test_only: False
+test_path: annotations/instances_val2017.json
+test_train: False
+train_path: /home/wzz/SCPNet/dataset/coco_lt_train.txt
+vpt_deep: False
+vpt_len: None
+vpt_shallow: True
+weight_decay: 0.0001
+zero_shot: False
+************
+Setting fixed seed: 33
+mean: [0.48145466, 0.4578275, 0.40821073]
+std: [0.26862954, 0.26130258, 0.27577711]
+loading annotations into memory...
+Done (t=0.83s)
+creating index...
+index created!
+Building model
+Loading CLIP (backbone: CLIP-ViT-B/16)
+Visual prompt length set to 10
+Turning off gradients in the model
+Turning on gradients in the prompt
+Turning on gradients in the tuner
+Turning on gradients in the head
+Total params: 149691905
+Tuned params: 7680
+Head params: 61440
+Initialize head with text features
+Initialize tensorboard (log_dir=./output/_/tensorboard)
+epoch [1/120] batch [10/60] time 0.158 (0.599) data 0.024 (0.183) loss 19.0291 (19.2208) lr 1.0000e-04 eta 1:11:43
+epoch [1/120] batch [20/60] time 0.281 (0.383) data 0.002 (0.092) loss 18.8440 (19.0632) lr 1.0000e-04 eta 0:45:52
+epoch [1/120] batch [30/60] time 0.220 (0.332) data 0.018 (0.063) loss 19.2515 (19.0657) lr 1.0000e-04 eta 0:39:37
+epoch [1/120] batch [40/60] time 0.172 (0.304) data 0.000 (0.048) loss 18.9432 (18.9127) lr 1.0000e-04 eta 0:36:14
+epoch [1/120] batch [50/60] time 0.165 (0.289) data 0.001 (0.039) loss 18.6000 (18.7551) lr 1.0000e-04 eta 0:34:25
+epoch [1/120] batch [60/60] time 0.263 (0.275) data 0.000 (0.033) loss 18.1540 (18.5436) lr 1.0000e-04 eta 0:32:44
+Evaluate on the test set
+mAP head: 0.08104568395840904, mAP medium: 0.046112739907187235, mAP tail: 0.056417958733515815
+mAP:5.9129128077146165
+epoch [2/120] batch [10/60] time 0.195 (0.301) data 0.001 (0.063) loss 18.0548 (18.1821) lr 9.9983e-05 eta 0:35:43
+epoch [2/120] batch [20/60] time 0.196 (0.291) data 0.018 (0.056) loss 17.2682 (17.8028) lr 9.9983e-05 eta 0:34:31
+epoch [2/120] batch [30/60] time 0.326 (0.282) data 0.001 (0.050) loss 17.6362 (17.7435) lr 9.9983e-05 eta 0:33:27
+epoch [2/120] batch [40/60] time 0.162 (0.272) data 0.002 (0.045) loss 17.1160 (17.5980) lr 9.9983e-05 eta 0:32:11
+epoch [2/120] batch [50/60] time 0.332 (0.268) data 0.006 (0.041) loss 17.5865 (17.4387) lr 9.9983e-05 eta 0:31:39
+epoch [2/120] batch [60/60] time 0.230 (0.261) data 0.005 (0.038) loss 16.8175 (17.1667) lr 9.9983e-05 eta 0:30:46
+Evaluate on the test set
+mAP head: 0.10959417067560055, mAP medium: 0.04991143166263823, mAP tail: 0.07341956151450732
+mAP:6.943659223515833
+epoch [3/120] batch [10/60] time 0.157 (0.270) data 0.001 (0.046) loss 17.3101 (17.1257) lr 9.9931e-05 eta 0:31:51
+epoch [3/120] batch [20/60] time 0.223 (0.265) data 0.001 (0.043) loss 16.8500 (16.8824) lr 9.9931e-05 eta 0:31:07
+epoch [3/120] batch [30/60] time 0.157 (0.261) data 0.000 (0.040) loss 16.7960 (16.8374) lr 9.9931e-05 eta 0:30:42
+epoch [3/120] batch [40/60] time 0.182 (0.256) data 0.002 (0.038) loss 16.6476 (16.6959) lr 9.9931e-05 eta 0:30:01
+epoch [3/120] batch [50/60] time 0.147 (0.254) data 0.001 (0.036) loss 16.2882 (16.5347) lr 9.9931e-05 eta 0:29:42
+epoch [3/120] batch [60/60] time 0.127 (0.250) data 0.000 (0.034) loss 16.4901 (16.4552) lr 9.9931e-05 eta 0:29:15
+Evaluate on the test set
+mAP head: 0.1116865688441755, mAP medium: 0.054596593596245524, mAP tail: 0.14035606861387276
+mAP:8.330490316377235
+epoch [4/120] batch [10/60] time 0.163 (0.260) data 0.001 (0.045) loss 16.0325 (16.2670) lr 9.9846e-05 eta 0:30:23
+epoch [4/120] batch [20/60] time 0.150 (0.256) data 0.001 (0.043) loss 15.9387 (16.1677) lr 9.9846e-05 eta 0:29:49
+epoch [4/120] batch [30/60] time 0.201 (0.252) data 0.001 (0.041) loss 15.9215 (16.0368) lr 9.9846e-05 eta 0:29:21
+epoch [4/120] batch [40/60] time 0.192 (0.250) data 0.001 (0.039) loss 16.2382 (15.9042) lr 9.9846e-05 eta 0:29:02
+epoch [4/120] batch [50/60] time 0.182 (0.246) data 0.001 (0.038) loss 15.7871 (15.9034) lr 9.9846e-05 eta 0:28:37
+epoch [4/120] batch [60/60] time 0.126 (0.244) data 0.006 (0.036) loss 15.4524 (15.7728) lr 9.9846e-05 eta 0:28:20
+Evaluate on the test set
+mAP head: 0.12290962481462293, mAP medium: 0.08975365577172371, mAP tail: 0.18878878611096783
+mAP:9.916826673383332
+epoch [5/120] batch [10/60] time 0.178 (0.253) data 0.001 (0.045) loss 15.4760 (15.6074) lr 9.9726e-05 eta 0:29:20
+epoch [5/120] batch [20/60] time 0.205 (0.250) data 0.012 (0.043) loss 15.2679 (15.4956) lr 9.9726e-05 eta 0:28:55
+epoch [5/120] batch [30/60] time 0.175 (0.248) data 0.024 (0.042) loss 15.4748 (15.5091) lr 9.9726e-05 eta 0:28:41
+epoch [5/120] batch [40/60] time 0.159 (0.245) data 0.001 (0.040) loss 15.7876 (15.5282) lr 9.9726e-05 eta 0:28:17
+epoch [5/120] batch [50/60] time 0.216 (0.243) data 0.000 (0.039) loss 15.4126 (15.4550) lr 9.9726e-05 eta 0:27:58
+epoch [5/120] batch [60/60] time 0.118 (0.241) data 0.001 (0.038) loss 15.3701 (15.4105) lr 9.9726e-05 eta 0:27:43
+Evaluate on the test set
+mAP head: 0.1531208860965381, mAP medium: 0.10617222155549555, mAP tail: 0.20754944048052631
+mAP:11.226984485447108
+epoch [6/120] batch [10/60] time 0.235 (0.249) data 0.000 (0.045) loss 15.0081 (15.3023) lr 9.9572e-05 eta 0:28:33
+epoch [6/120] batch [20/60] time 0.164 (0.246) data 0.007 (0.043) loss 15.1099 (15.2603) lr 9.9572e-05 eta 0:28:13
+epoch [6/120] batch [30/60] time 0.170 (0.244) data 0.001 (0.042) loss 15.1452 (15.1994) lr 9.9572e-05 eta 0:27:54
+epoch [6/120] batch [40/60] time 0.150 (0.243) data 0.009 (0.041) loss 15.4476 (15.2797) lr 9.9572e-05 eta 0:27:45
+epoch [6/120] batch [50/60] time 0.149 (0.240) data 0.000 (0.040) loss 14.6692 (15.1173) lr 9.9572e-05 eta 0:27:26
+epoch [6/120] batch [60/60] time 0.127 (0.239) data 0.000 (0.039) loss 15.2959 (15.1037) lr 9.9572e-05 eta 0:27:17
+Evaluate on the test set
+mAP head: 0.20189418014029403, mAP medium: 0.10110854616641941, mAP tail: 0.2255050410651253
+mAP:12.239882833962659
+epoch [7/120] batch [10/60] time 0.151 (0.245) data 0.000 (0.044) loss 15.4567 (15.0733) lr 9.9384e-05 eta 0:27:53
+epoch [7/120] batch [20/60] time 0.144 (0.243) data 0.000 (0.042) loss 14.8695 (15.0393) lr 9.9384e-05 eta 0:27:37
+epoch [7/120] batch [30/60] time 0.301 (0.241) data 0.004 (0.041) loss 15.0076 (15.0131) lr 9.9384e-05 eta 0:27:23
+epoch [7/120] batch [40/60] time 0.145 (0.240) data 0.000 (0.040) loss 14.5680 (14.9700) lr 9.9384e-05 eta 0:27:14
+epoch [7/120] batch [50/60] time 0.302 (0.239) data 0.000 (0.039) loss 14.7158 (14.9340) lr 9.9384e-05 eta 0:27:01
+epoch [7/120] batch [60/60] time 0.115 (0.237) data 0.001 (0.038) loss 14.6493 (14.8112) lr 9.9384e-05 eta 0:26:48
+Evaluate on the test set
+mAP head: 0.19087708939218753, mAP medium: 0.10868383303631424, mAP tail: 0.18672068001828737
+mAP:13.257346783841687
+epoch [8/120] batch [10/60] time 0.240 (0.242) data 0.001 (0.044) loss 14.9775 (14.7735) lr 9.9163e-05 eta 0:27:19
+epoch [8/120] batch [20/60] time 0.149 (0.240) data 0.001 (0.043) loss 14.0895 (14.7245) lr 9.9163e-05 eta 0:27:04
+epoch [8/120] batch [30/60] time 0.206 (0.240) data 0.007 (0.042) loss 15.0704 (14.7986) lr 9.9163e-05 eta 0:26:59
+epoch [8/120] batch [40/60] time 0.157 (0.238) data 0.004 (0.041) loss 14.9967 (14.7501) lr 9.9163e-05 eta 0:26:45
+epoch [8/120] batch [50/60] time 0.143 (0.237) data 0.000 (0.040) loss 14.4799 (14.6574) lr 9.9163e-05 eta 0:26:37
+epoch [8/120] batch [60/60] time 0.119 (0.236) data 0.001 (0.039) loss 14.4759 (14.6342) lr 9.9163e-05 eta 0:26:29
+Evaluate on the test set
+mAP head: 0.36598377897967366, mAP medium: 0.10892004482280344, mAP tail: 0.21564637157072775
+mAP:14.001430391609194
+epoch [9/120] batch [10/60] time 0.208 (0.239) data 0.043 (0.042) loss 14.5498 (14.5906) lr 9.8907e-05 eta 0:26:42
+epoch [9/120] batch [20/60] time 0.173 (0.238) data 0.013 (0.041) loss 14.4056 (14.5409) lr 9.8907e-05 eta 0:26:36
+epoch [9/120] batch [30/60] time 0.156 (0.237) data 0.001 (0.041) loss 14.0795 (14.5001) lr 9.8907e-05 eta 0:26:26
+epoch [9/120] batch [40/60] time 0.173 (0.236) data 0.001 (0.040) loss 14.3778 (14.4922) lr 9.8907e-05 eta 0:26:15
+epoch [9/120] batch [50/60] time 0.145 (0.235) data 0.000 (0.039) loss 14.4206 (14.4408) lr 9.8907e-05 eta 0:26:09
+epoch [9/120] batch [60/60] time 0.174 (0.234) data 0.000 (0.038) loss 14.3801 (14.4313) lr 9.8907e-05 eta 0:26:00
+Evaluate on the test set
+mAP head: 0.322816099848136, mAP medium: 0.1187568818087667, mAP tail: 0.21130819938640377
+mAP:15.312713907440296
+epoch [10/120] batch [10/60] time 0.182 (0.238) data 0.003 (0.042) loss 14.2888 (14.3316) lr 9.8618e-05 eta 0:26:19
+epoch [10/120] batch [20/60] time 0.147 (0.237) data 0.001 (0.041) loss 14.2093 (14.3282) lr 9.8618e-05 eta 0:26:13
+epoch [10/120] batch [30/60] time 0.195 (0.236) data 0.008 (0.040) loss 14.1301 (14.3260) lr 9.8618e-05 eta 0:26:04
+epoch [10/120] batch [40/60] time 0.303 (0.236) data 0.001 (0.040) loss 14.4809 (14.2122) lr 9.8618e-05 eta 0:25:59
+epoch [10/120] batch [50/60] time 0.151 (0.235) data 0.001 (0.039) loss 14.1107 (14.1609) lr 9.8618e-05 eta 0:25:52
+epoch [10/120] batch [60/60] time 0.120 (0.234) data 0.001 (0.038) loss 14.1902 (14.1575) lr 9.8618e-05 eta 0:25:44
+Evaluate on the test set
+mAP head: 0.4724737052459917, mAP medium: 0.12744344067111657, mAP tail: 0.19104122500085235
+mAP:17.146344241963206
+epoch [11/120] batch [10/60] time 0.303 (0.237) data 0.001 (0.041) loss 14.0183 (14.1592) lr 9.8296e-05 eta 0:26:00
+epoch [11/120] batch [20/60] time 0.199 (0.236) data 0.004 (0.040) loss 13.8778 (14.0456) lr 9.8296e-05 eta 0:25:55
+epoch [11/120] batch [30/60] time 0.179 (0.236) data 0.019 (0.039) loss 13.9680 (14.0624) lr 9.8296e-05 eta 0:25:50
+epoch [11/120] batch [40/60] time 0.177 (0.235) data 0.009 (0.039) loss 13.9260 (14.0016) lr 9.8296e-05 eta 0:25:42
+epoch [11/120] batch [50/60] time 0.168 (0.235) data 0.008 (0.038) loss 14.2072 (13.9582) lr 9.8296e-05 eta 0:25:38
+epoch [11/120] batch [60/60] time 0.234 (0.234) data 0.000 (0.038) loss 13.7973 (13.9043) lr 9.8296e-05 eta 0:25:31
+Evaluate on the test set
+mAP head: 0.39013783488037856, mAP medium: 0.15390389740346913, mAP tail: 0.2735888470794382
+mAP:18.4275804640155
+epoch [12/120] batch [10/60] time 0.747 (0.236) data 0.455 (0.040) loss 13.7938 (13.9261) lr 9.7941e-05 eta 0:25:43
+epoch [12/120] batch [20/60] time 0.183 (0.235) data 0.008 (0.040) loss 13.9108 (13.8224) lr 9.7941e-05 eta 0:25:35
+epoch [12/120] batch [30/60] time 0.213 (0.235) data 0.001 (0.039) loss 13.7593 (13.8305) lr 9.7941e-05 eta 0:25:30
+epoch [12/120] batch [40/60] time 0.293 (0.235) data 0.000 (0.039) loss 13.6769 (13.7512) lr 9.7941e-05 eta 0:25:24
+epoch [12/120] batch [50/60] time 0.156 (0.234) data 0.001 (0.038) loss 13.9105 (13.7511) lr 9.7941e-05 eta 0:25:17
+epoch [12/120] batch [60/60] time 0.234 (0.233) data 0.001 (0.038) loss 13.7976 (13.7266) lr 9.7941e-05 eta 0:25:09
+Evaluate on the test set
+mAP head: 0.3923890960482664, mAP medium: 0.1778517235828286, mAP tail: 0.23554856009632816
+mAP:19.873814935036133
+epoch [13/120] batch [10/60] time 0.188 (0.235) data 0.000 (0.039) loss 13.5058 (13.7074) lr 9.7553e-05 eta 0:25:18
+epoch [13/120] batch [20/60] time 0.225 (0.234) data 0.005 (0.039) loss 13.4540 (13.6397) lr 9.7553e-05 eta 0:25:14
+epoch [13/120] batch [30/60] time 0.151 (0.234) data 0.001 (0.038) loss 13.7068 (13.5762) lr 9.7553e-05 eta 0:25:07
+epoch [13/120] batch [40/60] time 0.175 (0.234) data 0.003 (0.038) loss 13.4593 (13.5199) lr 9.7553e-05 eta 0:25:04
+epoch [13/120] batch [50/60] time 0.301 (0.233) data 0.003 (0.037) loss 13.5207 (13.5247) lr 9.7553e-05 eta 0:24:57
+epoch [13/120] batch [60/60] time 0.134 (0.233) data 0.001 (0.037) loss 13.1159 (13.4258) lr 9.7553e-05 eta 0:24:54
+Evaluate on the test set
+mAP head: 0.34703873088701265, mAP medium: 0.23518295025212746, mAP tail: 0.2074412868754894
+mAP:21.98052334592241
+epoch [14/120] batch [10/60] time 0.144 (0.235) data 0.001 (0.039) loss 13.3524 (13.4260) lr 9.7132e-05 eta 0:25:08
+epoch [14/120] batch [20/60] time 0.292 (0.235) data 0.000 (0.038) loss 13.5264 (13.3516) lr 9.7132e-05 eta 0:25:01
+epoch [14/120] batch [30/60] time 0.185 (0.234) data 0.001 (0.038) loss 13.4797 (13.3887) lr 9.7132e-05 eta 0:24:56
+epoch [14/120] batch [40/60] time 0.187 (0.234) data 0.001 (0.038) loss 13.3617 (13.3539) lr 9.7132e-05 eta 0:24:52
+epoch [14/120] batch [50/60] time 0.305 (0.233) data 0.001 (0.037) loss 13.4401 (13.3231) lr 9.7132e-05 eta 0:24:46
+epoch [14/120] batch [60/60] time 0.239 (0.233) data 0.000 (0.037) loss 13.4171 (13.2665) lr 9.7132e-05 eta 0:24:40
+Evaluate on the test set
+mAP head: 0.22460072986492882, mAP medium: 0.22602184078477347, mAP tail: 0.20641324961655436
+mAP:23.322620515392657
+epoch [15/120] batch [10/60] time 0.164 (0.234) data 0.011 (0.038) loss 12.9703 (13.1581) lr 9.6679e-05 eta 0:24:48
+epoch [15/120] batch [20/60] time 0.165 (0.234) data 0.001 (0.038) loss 13.2069 (13.0915) lr 9.6679e-05 eta 0:24:42
+epoch [15/120] batch [30/60] time 0.205 (0.234) data 0.000 (0.037) loss 12.9542 (13.1221) lr 9.6679e-05 eta 0:24:38
+epoch [15/120] batch [40/60] time 0.215 (0.233) data 0.021 (0.037) loss 13.2212 (13.1032) lr 9.6679e-05 eta 0:24:32
+epoch [15/120] batch [50/60] time 0.159 (0.233) data 0.000 (0.037) loss 12.9567 (13.0433) lr 9.6679e-05 eta 0:24:27
+epoch [15/120] batch [60/60] time 0.122 (0.232) data 0.000 (0.036) loss 13.3182 (13.0942) lr 9.6679e-05 eta 0:24:22
+Evaluate on the test set
+mAP head: 0.2737908855665308, mAP medium: 0.258485026906996, mAP tail: 0.3222128009939842
+mAP:24.913429721802647
+epoch [16/120] batch [10/60] time 0.292 (0.234) data 0.000 (0.038) loss 12.8519 (12.9936) lr 9.6194e-05 eta 0:24:34
+epoch [16/120] batch [20/60] time 0.161 (0.234) data 0.001 (0.038) loss 13.1748 (12.9895) lr 9.6194e-05 eta 0:24:27
+epoch [16/120] batch [30/60] time 0.207 (0.233) data 0.000 (0.037) loss 12.9652 (12.9633) lr 9.6194e-05 eta 0:24:23
+epoch [16/120] batch [40/60] time 0.218 (0.233) data 0.001 (0.037) loss 12.9027 (12.8640) lr 9.6194e-05 eta 0:24:17
+epoch [16/120] batch [50/60] time 0.292 (0.233) data 0.000 (0.037) loss 12.7549 (12.8032) lr 9.6194e-05 eta 0:24:14
+epoch [16/120] batch [60/60] time 0.231 (0.232) data 0.000 (0.036) loss 12.7968 (12.7837) lr 9.6194e-05 eta 0:24:09
+Evaluate on the test set
+mAP head: 0.3019573902566144, mAP medium: 0.23333155668685537, mAP tail: 0.26745314054132285
+mAP:26.85275659302565
+epoch [17/120] batch [10/60] time 0.162 (0.235) data 0.000 (0.039) loss 12.4888 (12.7988) lr 9.5677e-05 eta 0:24:25
+epoch [17/120] batch [20/60] time 0.213 (0.235) data 0.001 (0.039) loss 12.4952 (12.7078) lr 9.5677e-05 eta 0:24:20
+epoch [17/120] batch [30/60] time 0.204 (0.235) data 0.023 (0.038) loss 12.6606 (12.6687) lr 9.5677e-05 eta 0:24:16
+epoch [17/120] batch [40/60] time 0.192 (0.234) data 0.000 (0.038) loss 12.7270 (12.6372) lr 9.5677e-05 eta 0:24:11
+epoch [17/120] batch [50/60] time 0.150 (0.234) data 0.000 (0.038) loss 12.6083 (12.6737) lr 9.5677e-05 eta 0:24:07
+epoch [17/120] batch [60/60] time 0.122 (0.233) data 0.001 (0.037) loss 12.5638 (12.5856) lr 9.5677e-05 eta 0:24:02
+Evaluate on the test set
+mAP head: 0.31298920830926874, mAP medium: 0.30150784743114684, mAP tail: 0.2826513516064809
+mAP:27.81562323380684
+epoch [18/120] batch [10/60] time 0.176 (0.236) data 0.000 (0.039) loss 12.2583 (12.5304) lr 9.5129e-05 eta 0:24:13
+epoch [18/120] batch [20/60] time 0.186 (0.235) data 0.023 (0.039) loss 12.6911 (12.5189) lr 9.5129e-05 eta 0:24:10
+epoch [18/120] batch [30/60] time 0.166 (0.235) data 0.001 (0.039) loss 12.4485 (12.4409) lr 9.5129e-05 eta 0:24:06
+epoch [18/120] batch [40/60] time 0.145 (0.235) data 0.001 (0.038) loss 11.9638 (12.3801) lr 9.5129e-05 eta 0:24:00
+epoch [18/120] batch [50/60] time 0.144 (0.234) data 0.001 (0.038) loss 12.6175 (12.4528) lr 9.5129e-05 eta 0:23:55
+epoch [18/120] batch [60/60] time 0.220 (0.234) data 0.000 (0.038) loss 12.6463 (12.3571) lr 9.5129e-05 eta 0:23:50
+Evaluate on the test set
+mAP head: 0.2795923633175897, mAP medium: 0.4421752328941078, mAP tail: 0.4180334083245069
+mAP:28.37975322299756
+epoch [19/120] batch [10/60] time 0.298 (0.236) data 0.003 (0.040) loss 11.9113 (12.2119) lr 9.4550e-05 eta 0:23:59
+epoch [19/120] batch [20/60] time 0.173 (0.235) data 0.001 (0.039) loss 12.1648 (12.2740) lr 9.4550e-05 eta 0:23:55
+epoch [19/120] batch [30/60] time 0.168 (0.235) data 0.001 (0.039) loss 12.5197 (12.2556) lr 9.4550e-05 eta 0:23:51
+epoch [19/120] batch [40/60] time 0.217 (0.235) data 0.001 (0.039) loss 12.2702 (12.2272) lr 9.4550e-05 eta 0:23:46
+epoch [19/120] batch [50/60] time 0.149 (0.234) data 0.001 (0.038) loss 12.1351 (12.1094) lr 9.4550e-05 eta 0:23:42
+epoch [19/120] batch [60/60] time 0.177 (0.234) data 0.007 (0.038) loss 11.9876 (12.1175) lr 9.4550e-05 eta 0:23:37
+Evaluate on the test set
+mAP head: 0.31026042231507417, mAP medium: 0.4180455753492729, mAP tail: 0.5506778765615279
+mAP:32.27852608173009
+epoch [20/120] batch [10/60] time 0.157 (0.235) data 0.001 (0.040) loss 12.1900 (12.0493) lr 9.3941e-05 eta 0:23:44
+epoch [20/120] batch [20/60] time 0.147 (0.235) data 0.000 (0.039) loss 11.8374 (12.0241) lr 9.3941e-05 eta 0:23:41
+epoch [20/120] batch [30/60] time 0.164 (0.235) data 0.001 (0.039) loss 11.9652 (12.0311) lr 9.3941e-05 eta 0:23:35
+epoch [20/120] batch [40/60] time 0.146 (0.235) data 0.001 (0.039) loss 12.1143 (11.9651) lr 9.3941e-05 eta 0:23:32
+epoch [20/120] batch [50/60] time 0.156 (0.234) data 0.000 (0.038) loss 11.9848 (11.9934) lr 9.3941e-05 eta 0:23:26
+epoch [20/120] batch [60/60] time 0.227 (0.234) data 0.000 (0.038) loss 12.2098 (11.8938) lr 9.3941e-05 eta 0:23:23
+Evaluate on the test set
+mAP head: 0.29879139195374205, mAP medium: 0.5578976927517972, mAP tail: 0.4247982298424707
+mAP:35.95644919855786
+epoch [21/120] batch [10/60] time 0.162 (0.235) data 0.001 (0.040) loss 11.6167 (11.8172) lr 9.3301e-05 eta 0:23:29
+epoch [21/120] batch [20/60] time 0.156 (0.235) data 0.001 (0.039) loss 11.7170 (11.7811) lr 9.3301e-05 eta 0:23:25
+epoch [21/120] batch [30/60] time 0.149 (0.235) data 0.000 (0.039) loss 11.6037 (11.7360) lr 9.3301e-05 eta 0:23:21
+epoch [21/120] batch [40/60] time 0.155 (0.234) data 0.001 (0.039) loss 11.4746 (11.6729) lr 9.3301e-05 eta 0:23:16
+epoch [21/120] batch [50/60] time 0.165 (0.234) data 0.011 (0.038) loss 11.5823 (11.6060) lr 9.3301e-05 eta 0:23:12
+epoch [21/120] batch [60/60] time 0.119 (0.234) data 0.000 (0.038) loss 11.7393 (11.6129) lr 9.3301e-05 eta 0:23:08
+Evaluate on the test set
+mAP head: 0.3741312523708999, mAP medium: 0.5194112975215076, mAP tail: 0.5106760505757846
+mAP:36.9859016159641
+epoch [22/120] batch [10/60] time 0.177 (0.235) data 0.001 (0.040) loss 11.2006 (11.5041) lr 9.2632e-05 eta 0:23:15
+epoch [22/120] batch [20/60] time 0.182 (0.235) data 0.000 (0.039) loss 11.4529 (11.5544) lr 9.2632e-05 eta 0:23:10
+epoch [22/120] batch [30/60] time 0.290 (0.235) data 0.000 (0.039) loss 11.3278 (11.4806) lr 9.2632e-05 eta 0:23:06
+epoch [22/120] batch [40/60] time 0.309 (0.234) data 0.015 (0.039) loss 11.3643 (11.4547) lr 9.2632e-05 eta 0:23:02
+epoch [22/120] batch [50/60] time 0.287 (0.234) data 0.000 (0.039) loss 11.0286 (11.3705) lr 9.2632e-05 eta 0:22:59
+epoch [22/120] batch [60/60] time 0.117 (0.234) data 0.000 (0.038) loss 11.3245 (11.2353) lr 9.2632e-05 eta 0:22:56
+Evaluate on the test set
+mAP head: 0.35483759921785024, mAP medium: 0.5167041497913709, mAP tail: 0.5452738336766274
+mAP:38.24483224330539
+epoch [23/120] batch [10/60] time 0.144 (0.235) data 0.001 (0.039) loss 11.1853 (11.2161) lr 9.1934e-05 eta 0:23:00
+epoch [23/120] batch [20/60] time 0.168 (0.235) data 0.012 (0.039) loss 11.1067 (11.1792) lr 9.1934e-05 eta 0:22:55
+epoch [23/120] batch [30/60] time 0.295 (0.235) data 0.000 (0.039) loss 11.0872 (11.1747) lr 9.1934e-05 eta 0:22:52
+epoch [23/120] batch [40/60] time 0.329 (0.234) data 0.002 (0.038) loss 10.8304 (11.1785) lr 9.1934e-05 eta 0:22:48
+epoch [23/120] batch [50/60] time 0.152 (0.234) data 0.001 (0.038) loss 11.0810 (11.1045) lr 9.1934e-05 eta 0:22:44
+epoch [23/120] batch [60/60] time 0.121 (0.234) data 0.001 (0.038) loss 11.3136 (11.0436) lr 9.1934e-05 eta 0:22:40
+Evaluate on the test set
+mAP head: 0.3588378151615941, mAP medium: 0.5036862861100458, mAP tail: 0.45237328633055784
+mAP:37.83020403175642
+epoch [24/120] batch [10/60] time 0.148 (0.235) data 0.001 (0.039) loss 11.0858 (11.0017) lr 9.1206e-05 eta 0:22:45
+epoch [24/120] batch [20/60] time 0.308 (0.235) data 0.001 (0.039) loss 10.7839 (10.9493) lr 9.1206e-05 eta 0:22:41
+epoch [24/120] batch [30/60] time 0.151 (0.235) data 0.001 (0.039) loss 10.7639 (10.8947) lr 9.1206e-05 eta 0:22:37
+epoch [24/120] batch [40/60] time 0.179 (0.234) data 0.000 (0.038) loss 10.7656 (10.7997) lr 9.1206e-05 eta 0:22:34
+epoch [24/120] batch [50/60] time 0.186 (0.234) data 0.000 (0.038) loss 11.0242 (10.7619) lr 9.1206e-05 eta 0:22:30
+epoch [24/120] batch [60/60] time 0.233 (0.234) data 0.000 (0.038) loss 10.6939 (10.7598) lr 9.1206e-05 eta 0:22:26
+Evaluate on the test set
+mAP head: 0.3347169493736663, mAP medium: 0.4567187253257528, mAP tail: 0.48661152050646694
+mAP:37.39521419442099
+epoch [25/120] batch [10/60] time 0.188 (0.236) data 0.008 (0.040) loss 10.4358 (10.6691) lr 9.0451e-05 eta 0:22:35
+epoch [25/120] batch [20/60] time 0.204 (0.236) data 0.017 (0.040) loss 10.4931 (10.6609) lr 9.0451e-05 eta 0:22:32
+epoch [25/120] batch [30/60] time 0.184 (0.235) data 0.000 (0.039) loss 10.6556 (10.6036) lr 9.0451e-05 eta 0:22:28
+epoch [25/120] batch [40/60] time 0.192 (0.235) data 0.007 (0.039) loss 10.2529 (10.5464) lr 9.0451e-05 eta 0:22:23
+epoch [25/120] batch [50/60] time 0.163 (0.235) data 0.006 (0.039) loss 10.7119 (10.5112) lr 9.0451e-05 eta 0:22:20
+epoch [25/120] batch [60/60] time 0.134 (0.234) data 0.000 (0.039) loss 10.5804 (10.4473) lr 9.0451e-05 eta 0:22:15
+Evaluate on the test set
+mAP head: 0.3644199577149175, mAP medium: 0.5073500171430717, mAP tail: 0.46837585383191066
+mAP:37.944484095380766
+epoch [26/120] batch [10/60] time 0.300 (0.235) data 0.000 (0.039) loss 10.3650 (10.4733) lr 8.9668e-05 eta 0:22:19
+epoch [26/120] batch [20/60] time 0.180 (0.235) data 0.000 (0.039) loss 10.1506 (10.3489) lr 8.9668e-05 eta 0:22:16
+epoch [26/120] batch [30/60] time 0.152 (0.235) data 0.001 (0.039) loss 10.3476 (10.2639) lr 8.9668e-05 eta 0:22:13
+epoch [26/120] batch [40/60] time 0.292 (0.235) data 0.000 (0.039) loss 10.5569 (10.3303) lr 8.9668e-05 eta 0:22:09
+epoch [26/120] batch [50/60] time 0.141 (0.235) data 0.001 (0.038) loss 10.1362 (10.2220) lr 8.9668e-05 eta 0:22:05
+epoch [26/120] batch [60/60] time 0.114 (0.234) data 0.000 (0.038) loss 9.5458 (10.0676) lr 8.9668e-05 eta 0:22:01
+Evaluate on the test set
