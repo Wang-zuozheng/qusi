@@ -53,6 +53,7 @@ class PeftModelFromCLIP(nn.Module):
             
         elif cfg.backbone.startswith("CLIP-RN"):
             self.text_encoder = CLIP_Text(clip_model)
+            self.prompt_text_encoder = TextEncoder(clip_model)
             self.image_encoder = Peft_RN(clip_model.visual)
             self.tuner = RN_Tuner(cfg, clip_model.visual, num_classes)
         
@@ -82,10 +83,10 @@ class PeftModelFromCLIP(nn.Module):
         prompts = self.prompt_learner()
         tokenized_prompts = self.tokenized_prompts
         text_features = self.prompt_text_encoder(prompts, tokenized_prompts)
-        if self.gcn is not None:
+        if hasattr(self, "gcn"):
             identity = text_features
             text_features = self.gcn(text_features, gcn_relation)
-        text_features += identity
+            text_features += identity
         logit_scale = self.logit_scale.exp()
         image_features= image_features / image_features.norm(dim=-1,
                                                                 keepdim=True)    
@@ -93,7 +94,7 @@ class PeftModelFromCLIP(nn.Module):
                                                             keepdim=True)
         logits = logit_scale * image_features @ text_features.t()
         
-        return logits
+        return logits, image_features, logit_scale
 
 
 class PeftModelFromViT(nn.Module):

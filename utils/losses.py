@@ -315,7 +315,7 @@ class ResampleLoss(nn.Module):
 
 def rebalance_loss(input_values, gamma_pos, gamma_neg, weight, label):
     """Computes the focal loss"""
-    p = torch.exp(-input_values)
+    p = torch.exp(-input_values)#  
     loss = weight * (1 - p) ** gamma_pos * input_values * label + weight * (1 - p) ** gamma_neg * input_values * (1 - label)
     return loss.mean()
 
@@ -323,7 +323,7 @@ class DBLoss(nn.Module):
     def __init__(self, freq_file, weight=None, gamma1=2.0, gamma2=2.0, logit_reg=dict(
                      neg_scale=5.0,
                      init_bias=0.1
-                 )):
+                 ), map_alpha=0.1, map_beta=0.5):
         super().__init__()
         self.gamma_pos = gamma1
         self.gamma_neg = gamma2
@@ -342,11 +342,13 @@ class DBLoss(nn.Module):
         self.init_bias = - torch.log(
             self.train_num / self.class_freq - 1) * init_bias / self.neg_scale
         self.propotion_inv = self.train_num / self.class_freq
-        self.map_beta = 0.5
-        self.map_alpha = 0.1
+        self.map_beta = map_beta
+        self.map_alpha = map_alpha
+        
     def rebalance_weight(self):       
         p = self.class_freq / self.train_num
         weight = self.map_beta  * torch.exp(p) + self.map_alpha
+        weight = torch.ones(self.class_freq.shape).cuda()
         return weight
 
     def logit_reg_functions(self, labels, logits, weight=None):
@@ -374,15 +376,15 @@ def focal_loss(input_values, gamma):
     return loss.mean()
 
 class FocalLoss(nn.Module):
-    def __init__(self, weight=None, gamma=2.0):
+    def __init__(self, weight=None, gamma=4.0):
         super().__init__()
         assert gamma >= 0
         self.gamma = gamma
         self.weight = weight
 
     def forward(self, logit, target):# cross_entropy
-        input_value = F.binary_cross_entropy_with_logits(logit, target, reduction='none', weight=self.weight)
-        
+        input_value = F.binary_cross_entropy_with_logits(logit, target, reduction='none')
+        # return input_value.mean()
         return focal_loss(input_value, self.gamma)
 
 

@@ -10,11 +10,10 @@ gpu: 0
 num_workers: 8
 prec: "amp"
 
-wr: 0.5
-num_epochs: 60
+num_epochs: 64
 batch_size: 32
 micro_batch_size: 32
-lr: 5e-4 # 1e-4 #0.01
+lr: 1e-4 # 1e-4 #0.01
 weight_decay: 1e-4 #1e-4 #5e-4
 momentum: 0.9
 gcn_lr: 1e-3 # 1e-4 #0.01
@@ -36,7 +35,7 @@ ssf_mlp: False
 ssf_ln: False
 
 init_head: "text_feat"
-test_ensemble: False
+test_ensemble: True
 expand: 24
 is_gcn: False
 in_features: 512
@@ -44,11 +43,8 @@ mid_features: 2048
 n_ctx: 4
 ctx_init: a photo of a
 is_prompt_tuning: False
-sparse_topk: 60
+sparse_topk: 20
 reweight_p: 0.2
 T: 0.3
 map_alpha: 0.5
 map_beta: 0.1
-kl_lambda: 0.2
-
-adapter_dim: 32

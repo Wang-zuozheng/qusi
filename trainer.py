@@ -31,11 +31,13 @@ from torchvision import datasets as datasets
 import copy
 from randaugment import RandAugment
 import mmcv
+# import ssl
+# ssl._create_default_https_context = ssl._create_unverified_context
 
 def load_clip_to_cpu(cfg):
     backbone_name = cfg.backbone.lstrip("CLIP-")
     url = clip._MODELS[backbone_name]
-    model_path = clip._download(url)
+    model_path = clip._download(url)# /home/ubuntu/.cache/clip/
 
     try:
         # loading JIT archive
@@ -160,6 +162,56 @@ class WeakStrongDataset(torch.utils.data.Dataset):  # type: ignore
     def __len__(self):
         return len(self.name)
 
+class COCO_missing_val_dataset(torch.utils.data.Dataset):  # type: ignore
+
+    def __init__(self,
+                 root,
+                 annFile,
+                 transform=None,
+                 target_transform=None,
+                 class_num: int = -1):
+        self.root = root
+        with open(annFile, 'r') as f:
+            names = f.readlines()
+        
+        self.name = names
+        self.transform = transform
+        self.class_num = class_num
+        self.target_transform = target_transform
+
+    def __getitem__(self, index):
+        name = self.name[index]
+        
+        # path = name.strip('\n').split(',')[0]
+        # num = name.strip('\n').split(',')[1]
+        # num = num.strip(' ').split(' ')
+        
+        temp = name.strip('\n').split(' ')
+        path = temp[0]
+        num = temp[1:]
+        
+        
+        num = np.array([int(i) for i in num])
+        label = np.zeros([self.class_num])
+        label[num] = 1
+        label = torch.tensor(label, dtype=torch.long)
+        if os.path.exists(os.path.join(self.root, path)) == False:
+            label = np.zeros([self.class_num])
+            label = torch.tensor(label, dtype=torch.long)
+            img = np.zeros((448, 448, 3))
+            img = Image.fromarray(np.uint8(img))  # type: ignore
+            exit(1)
+        else:
+            img = Image.open(os.path.join(self.root, path)).convert('RGB')
+        if self.transform is not None:
+            img = self.transform(img)
+        if self.target_transform is not None:
+            target = self.target_transform(target)  # type: ignore # noqa
+        assert (self.target_transform is None)
+        return img, label
+
+    def __len__(self):
+        return len(self.name)
 
 class Trainer:
     def __init__(self, cfg):
@@ -173,7 +225,10 @@ class Trainer:
             self.device = torch.device("cuda:{}".format(cfg.gpu))
 
         self.cfg = cfg
-        self.build_data_loader()
+        if 'COCO' in cfg.root:
+            self.build_data_loader()
+        else:
+            self.build_data_loader_voc()
         self.build_model()
         self.build_relation()
         self.relation_process(cfg)
@@ -181,6 +236,93 @@ class Trainer:
         self._writer = None
 
     def build_data_loader(self):
+        cfg = self.cfg
+        resolution = cfg.resolution
+        expand = cfg.expand
+        
+        if cfg.backbone.startswith("CLIP"):
+            mean = [0.48145466, 0.4578275, 0.40821073]
+            std = [0.26862954, 0.26130258, 0.27577711]
+        else:
+            mean = [0.5, 0.5, 0.5]
+            std = [0.5, 0.5, 0.5]
+        print("mean:", mean)
+        print("std:", std)
+        transform_train = transforms.Compose([
+            transforms.RandomResizedCrop(resolution),
+            transforms.RandomHorizontalFlip(),
+            transforms.ToTensor(),
+            transforms.Normalize(mean, std),
+        ])
+
+        transform_test = transforms.Compose([
+            transforms.Resize(resolution),
+            transforms.CenterCrop(resolution),
+            transforms.ToTensor(),
+            transforms.Normalize(mean, std),
+        ])  
+        
+        # test端做不做集成
+        if cfg.test_ensemble:
+            transform_test = transforms.Compose([
+                transforms.Resize(resolution + expand),
+                transforms.FiveCrop(resolution),
+                transforms.Lambda(lambda crops: torch.stack([transforms.ToTensor()(crop) for crop in crops])),
+                transforms.Normalize(mean, std),
+            ])
+       
+        # COCO Data loading
+        instances_path_val = os.path.join(cfg.root,
+                                      cfg.test_path)
+      
+        instances_path_train = cfg.train_path
+    
+        data_path_val = cfg.data_path_val
+        data_path_train = cfg.data_path_train
+        # test_dataset = CocoDetection(data_path_val, instances_path_val,
+                                # transform_plain)
+        test_dataset = CocoDetection(data_path_val, instances_path_val,
+                                transform_test)
+        train_dataset = WeakStrongDataset(data_path_train,
+                                      instances_path_train,
+                                      transform_train,
+                                      class_num=80)
+        
+        self.num_classes = train_dataset.class_num
+
+        self.co = torch.zeros(self.num_classes, self.num_classes)
+        
+        # Pytorch Data loader
+        train_loader = torch.utils.data.DataLoader(  
+            train_dataset,
+            batch_size=cfg.batch_size,
+            shuffle=True,
+            num_workers=cfg.num_workers,
+            pin_memory=True)
+
+        test_loader = torch.utils.data.DataLoader(  # type: ignore
+            test_dataset,
+            batch_size=cfg.batch_size,
+            shuffle=False,
+            num_workers=cfg.num_workers,
+            pin_memory=False)
+        
+        self.train_loader = train_loader
+        self.test_loader = test_loader
+
+        class_freq = np.asarray(mmcv.load('/home/ubuntu/wzz/qusi/data/coco/class_freq.pkl')['class_freq'])
+        self.many_idxs = list(np.where(class_freq>=100)[0])
+        self.med_idxs = list(np.where((class_freq<100) * (class_freq >= 20))[0])
+        self.few_idxs = list(np.where(class_freq<20)[0])
+
+        self.classnames = self.test_loader.dataset.labels()
+        self.num_classes = len(self.classnames)
+        
+        
+        assert cfg.batch_size % cfg.micro_batch_size == 0
+        self.accum_step = cfg.batch_size // cfg.micro_batch_size
+
+    def build_data_loader_voc(self):
         cfg = self.cfg
         resolution = cfg.resolution
         expand = cfg.expand
@@ -223,20 +365,21 @@ class Trainer:
                 transforms.Normalize(mean, std),
             ])
         
-        # COCO Data loading
-        instances_path_val = os.path.join(cfg.root,
-                                      cfg.test_path)
-      
+        # VOC Data loading
         instances_path_train = cfg.train_path
-    
-        data_path_val = cfg.data_path_val
-        data_path_train = cfg.data_path_train
-        test_dataset = CocoDetection(data_path_val, instances_path_val,
-                                transform_plain)
+        instances_path_val = cfg.test_path
+
+        data_path_val = f'{cfg.root}VOC2007/JPEGImages'  # args.data
+        data_path_train = f'{cfg.root}VOC2012/JPEGImages'  # args.data
+        
+        test_dataset = COCO_missing_val_dataset(data_path_val,
+                                       instances_path_val,
+                                       transform_plain,
+                                       class_num=20)
         train_dataset = WeakStrongDataset(data_path_train,
                                       instances_path_train,
                                       transform_train,
-                                      class_num=80)
+                                      class_num=20)
         
         self.num_classes = train_dataset.class_num
 
@@ -259,18 +402,28 @@ class Trainer:
         
         self.train_loader = train_loader
         self.test_loader = test_loader
+        if 'COCO' in cfg.root:
+            self.classnames = self.test_loader.dataset.labels()
+            class_freq = np.asarray(mmcv.load('/home/ubuntu/wzz/qusi/data/coco/class_freq.pkl')['class_freq'])
 
-        class_freq = np.asarray(mmcv.load('/home/wzz/LMPT/data/voc/class_freq.pkl')['class_freq'])
+        else:
+            self.classnames = [
+            'aeroplane', 'bicycle', 'bird', 'boat', 'bottle', 'bus', 'car',
+            'cat', 'chair', 'cow', 'diningtable', 'dog', 'horse','motorbike', 
+            'person', 'pottedplant', 'sheep', 'sofa', 'train','tvmonitor'
+            ]
+            class_freq = np.asarray(mmcv.load('/home/ubuntu/wzz/qusi/data/voc/class_freq.pkl')['class_freq'])
+
         self.many_idxs = list(np.where(class_freq>=100)[0])
         self.med_idxs = list(np.where((class_freq<100) * (class_freq >= 20))[0])
         self.few_idxs = list(np.where(class_freq<20)[0])
-
-        self.classnames = self.test_loader.dataset.labels()
+        
         self.num_classes = len(self.classnames)
         
         
         assert cfg.batch_size % cfg.micro_batch_size == 0
         self.accum_step = cfg.batch_size // cfg.micro_batch_size
+
 
 
     def build_model(self):
@@ -298,7 +451,10 @@ class Trainer:
             self.model.to(self.device)
             self.tuner = self.model.tuner
             self.head = self.model.head
-            self.gcn = self.model.gcn
+            if cfg.is_gcn:
+                self.gcn = self.model.gcn
+            if cfg.is_prompt_tuning:
+                self.prompt = self.model.prompt_learner
 
         elif cfg.backbone.startswith("IN21K-ViT"):
             print(f"Loading ViT (backbone: {cfg.backbone})")
@@ -332,27 +488,21 @@ class Trainer:
 
     def build_optimizer(self):
         cfg = self.cfg
-        prompt_p = []
-        if cfg.full_tuning == True:
-            for name, param in self.model.named_parameters():
+      
+        print("Turning off gradients in the model")
+        for name, param in self.model.named_parameters():
+            param.requires_grad_(False)
+        print("Turning on gradients in the prompt")
+        for name, param in self.model.named_parameters():
+            if "prompt_learner" in name:
                 param.requires_grad_(True)
-                if "text_encoder" in name:
-                    param.requires_grad_(False)
-        else:
-            print("Turning off gradients in the model")
-            for name, param in self.model.named_parameters():
-                param.requires_grad_(False)
-            print("Turning on gradients in the prompt")
-            for name, param in self.model.named_parameters():
-                if "prompt_learner" in name:
-                    param.requires_grad_(True)
-                    prompt_p.append(param)
-            print("Turning on gradients in the tuner")
-            for name, param in self.tuner.named_parameters():
-                param.requires_grad_(True)
-            print("Turning on gradients in the head")
-            for name, param in self.head.named_parameters():
-                param.requires_grad_(True)
+                print("Turning on gradients in the tuner")
+        for name, param in self.tuner.named_parameters():
+            param.requires_grad_(True)
+        print("Turning on gradients in the head")
+        for name, param in self.head.named_parameters():
+            param.requires_grad_(True)
+        if cfg.is_gcn:
             print("Turning on gradients in the gcn")
             for name, param in self.gcn.named_parameters():
                 param.requires_grad_(True)
@@ -362,23 +512,168 @@ class Trainer:
         total_params = sum(p.numel() for p in self.model.parameters())
         tuned_params = sum(p.numel() for p in self.tuner.parameters())
         head_params = sum(p.numel() for p in self.head.parameters())
-        gcn_params = sum(p.numel() for p in self.gcn.parameters())
+        if cfg.is_gcn:
+            gcn_params = sum(p.numel() for p in self.gcn.parameters())
+        if cfg.is_prompt_tuning:
+            prompt_params = sum(p.numel() for p in self.prompt.parameters())
+        
         print(f"Total params: {total_params}")
         print(f"Tuned params: {tuned_params}")
         print(f"Head params: {head_params}")
-        print(f"Gcn params: {gcn_params}")
+        if cfg.is_gcn:
+            print(f"Gcn params: {gcn_params}")
+        if cfg.is_prompt_tuning:
+            print(f"Prompt params: {prompt_params}")
+      
         # for name, param in self.tuner.named_parameters():
         #     print(name, param.numel())
-
-        # NOTE: only give tuner and head to the optimizer
-        self.optim = torch.optim.SGD([{"params": self.tuner.parameters(), "lr": cfg.lr, "weight_decay": cfg.weight_decay, "momentum": cfg.momentum},
-                                      {"params": self.head.parameters(), "lr": cfg.lr, "weight_decay": cfg.weight_decay, "momentum": cfg.momentum},
-                                      {"params": self.gcn.parameters(), "lr": cfg.gcn_lr, "weight_decay": cfg.gcn_weight_decay, "momentum": cfg.gcn_momentum},
-                                      {"params": prompt_p, "lr": cfg.lr, "weight_decay": cfg.weight_decay, "momentum": cfg.momentum}],
-                                      )
-        self.sched = torch.optim.lr_scheduler.CosineAnnealingLR(self.optim, cfg.num_epochs)
-        self.scaler = GradScaler() if cfg.prec == "amp" else None
-
+        if 'ViT' in cfg.backbone:
+            if 'COCO' in cfg.root:
+                # NOTE: only give tuner and head to the optimizer
+                cfg.lr = 5e-4
+                para = [{"params": self.tuner.parameters(), "lr": cfg.lr, "weight_decay": cfg.weight_decay, "momentum": cfg.momentum},
+                        {"params": self.head.parameters(), "lr": cfg.lr, "weight_decay": cfg.weight_decay, "momentum": cfg.momentum}]
+                # para = [{"params": self.tuner.parameters(), "lr": cfg.lr},
+                #         {"params": self.head.parameters(), "lr": cfg.lr}]
+                max_lr = [0.0005, 0.0005]
+                
+                if cfg.is_prompt_tuning:
+                    para.append({"params": self.prompt.parameters(), "lr": cfg.lr, "weight_decay": cfg.weight_decay, "momentum": cfg.momentum})
+                    max_lr.append(0.0005)
+                if cfg.is_gcn:
+                    # para.append({"params": self.gcn.parameters(), "lr": cfg.gcn_lr, "weight_decay": cfg.gcn_weight_decay, "momentum": cfg.gcn_momentum})
+                    # max_lr.append(0.001)
+                    para_gcn = [{"params": self.gcn.parameters(), "lr": cfg.gcn_lr, "weight_decay": cfg.gcn_weight_decay, "momentum": cfg.gcn_momentum}]
+                    self.optim_gcn = torch.optim.Adam(
+                        params=para_gcn, lr=cfg.gcn_lr, 
+                        weight_decay=0)
+                    # self.optim_gcn = torch.optim.SGD(
+                    #     params=para_gcn, lr=cfg.gcn_lr)
+                    self.sched_gcn = torch.optim.lr_scheduler.CosineAnnealingLR(self.optim_gcn, 16)#cfg.num_epochs
+                    
+                
+                # self.optim = torch.optim.SGD(para)
+                self.optim = torch.optim.Adam(
+                    params=para, lr=5e-4, 
+                    weight_decay=0)
+                self.sched = torch.optim.lr_scheduler.OneCycleLR(self.optim,
+                    max_lr=max_lr,
+                    steps_per_epoch=60,
+                    epochs=120,  # type: ignore
+                    pct_start=0.2)
+                # self.sched = torch.optim.lr_scheduler.CosineAnnealingLR(self.optim, cfg.num_epochs)#
+                
+                self.scaler = GradScaler() if cfg.prec == "amp" else None
+            else:
+                # voc VIT16
+                cfg.lr = 5e-4
+                para = [{"params": self.tuner.parameters(), "lr": cfg.lr, "weight_decay": cfg.weight_decay, "momentum": cfg.momentum},
+                        {"params": self.head.parameters(), "lr": cfg.lr, "weight_decay": cfg.weight_decay, "momentum": cfg.momentum}]
+                # para = [{"params": self.tuner.parameters(), "lr": cfg.lr},
+                #         {"params": self.head.parameters(), "lr": cfg.lr}]
+                max_lr = [0.0005, 0.0005]
+                
+                if cfg.is_prompt_tuning:
+                    para.append({"params": self.prompt.parameters(), "lr": cfg.lr, "weight_decay": cfg.weight_decay, "momentum": cfg.momentum})
+                    max_lr.append(0.0005)
+                if cfg.is_gcn:
+                    # para.append({"params": self.gcn.parameters(), "lr": cfg.gcn_lr, "weight_decay": cfg.gcn_weight_decay, "momentum": cfg.gcn_momentum})
+                    # max_lr.append(0.001)
+                    para_gcn = [{"params": self.gcn.parameters(), "lr": cfg.gcn_lr, "weight_decay": cfg.gcn_weight_decay, "momentum": cfg.gcn_momentum}]
+                    self.optim_gcn = torch.optim.Adam(
+                        params=para_gcn, lr=cfg.gcn_lr, 
+                        weight_decay=0)
+                    # self.optim_gcn = torch.optim.SGD(
+                    #     params=para_gcn, lr=cfg.gcn_lr)
+                    self.sched_gcn = torch.optim.lr_scheduler.CosineAnnealingLR(self.optim_gcn, 16)#cfg.num_epochs
+                    
+                
+                # self.optim = torch.optim.SGD(para)
+                self.optim = torch.optim.Adam(
+                    params=para, lr=5e-4, 
+                    weight_decay=0)
+                self.sched = torch.optim.lr_scheduler.OneCycleLR(self.optim,
+                    max_lr=max_lr,
+                    steps_per_epoch=60,
+                    epochs=120,  # type: ignore
+                    pct_start=0.2)
+                # self.sched = torch.optim.lr_scheduler.CosineAnnealingLR(self.optim, cfg.num_epochs)#
+                
+                self.scaler = GradScaler() if cfg.prec == "amp" else None
+        else:
+            if 'COCO' in cfg.root:
+                # coco RN50
+                cfg.lr = 1e-4
+                para = [{"params": self.tuner.parameters(), "lr": cfg.lr, "weight_decay": cfg.weight_decay, "momentum": cfg.momentum},
+                        {"params": self.head.parameters(), "lr": cfg.lr, "weight_decay": cfg.weight_decay, "momentum": cfg.momentum}]
+                # para = [{"params": self.tuner.parameters(), "lr": cfg.lr},
+                #         {"params": self.head.parameters(), "lr": cfg.lr}]
+                max_lr = [0.0005, 0.0005]
+                
+                if cfg.is_prompt_tuning:
+                    para.append({"params": self.prompt.parameters(), "lr": cfg.lr, "weight_decay": cfg.weight_decay, "momentum": cfg.momentum})
+                    max_lr.append(0.0005)
+                if cfg.is_gcn:
+                    # para.append({"params": self.gcn.parameters(), "lr": cfg.gcn_lr, "weight_decay": cfg.gcn_weight_decay, "momentum": cfg.gcn_momentum})
+                    # max_lr.append(0.001)
+                    para_gcn = [{"params": self.gcn.parameters(), "lr": cfg.gcn_lr, "weight_decay": cfg.gcn_weight_decay, "momentum": cfg.gcn_momentum}]
+                    self.optim_gcn = torch.optim.Adam(
+                        params=para_gcn, lr=cfg.gcn_lr, 
+                        weight_decay=0)
+                    # self.optim_gcn = torch.optim.SGD(
+                    #     params=para_gcn, lr=cfg.gcn_lr)
+                    self.sched_gcn = torch.optim.lr_scheduler.CosineAnnealingLR(self.optim_gcn, 16)#cfg.num_epochs
+                    
+                
+                # self.optim = torch.optim.SGD(para)
+                self.optim = torch.optim.Adam(
+                    params=para, lr=5e-4, 
+                    weight_decay=0)
+                self.sched = torch.optim.lr_scheduler.OneCycleLR(self.optim,
+                    max_lr=max_lr,
+                    steps_per_epoch=60,
+                    epochs=120,  # type: ignore
+                    pct_start=0.2)
+                # self.sched = torch.optim.lr_scheduler.CosineAnnealingLR(self.optim, cfg.num_epochs)#
+                
+                self.scaler = GradScaler() if cfg.prec == "amp" else None
+            else:
+                # voc RN50
+                cfg.lr = 5e-4
+                para = [{"params": self.tuner.parameters(), "lr": cfg.lr, "weight_decay": cfg.weight_decay, "momentum": cfg.momentum},
+                        {"params": self.head.parameters(), "lr": cfg.lr, "weight_decay": cfg.weight_decay, "momentum": cfg.momentum}]
+                # para = [{"params": self.tuner.parameters(), "lr": cfg.lr},
+                #         {"params": self.head.parameters(), "lr": cfg.lr}]
+                max_lr = [0.0005, 0.0005]
+                
+                if cfg.is_prompt_tuning:
+                    para.append({"params": self.prompt.parameters(), "lr": cfg.lr, "weight_decay": cfg.weight_decay, "momentum": cfg.momentum})
+                    max_lr.append(0.0005)
+                if cfg.is_gcn:
+                    # para.append({"params": self.gcn.parameters(), "lr": cfg.gcn_lr, "weight_decay": cfg.gcn_weight_decay, "momentum": cfg.gcn_momentum})
+                    # max_lr.append(0.001)
+                    para_gcn = [{"params": self.gcn.parameters(), "lr": cfg.gcn_lr, "weight_decay": cfg.gcn_weight_decay, "momentum": cfg.gcn_momentum}]
+                    self.optim_gcn = torch.optim.Adam(
+                        params=para_gcn, lr=cfg.gcn_lr, 
+                        weight_decay=0)
+                    # self.optim_gcn = torch.optim.SGD(
+                    #     params=para_gcn, lr=cfg.gcn_lr)
+                    self.sched_gcn = torch.optim.lr_scheduler.CosineAnnealingLR(self.optim_gcn, 16)#cfg.num_epochs
+                    
+                
+                # self.optim = torch.optim.SGD(para)
+                self.optim = torch.optim.Adam(
+                    params=para, lr=5e-4, 
+                    weight_decay=0)
+                self.sched = torch.optim.lr_scheduler.OneCycleLR(self.optim,
+                    max_lr=max_lr,
+                    steps_per_epoch=60,
+                    epochs=120,  # type: ignore
+                    pct_start=0.2)
+                # self.sched = torch.optim.lr_scheduler.CosineAnnealingLR(self.optim, cfg.num_epochs)#
+                
+                self.scaler = GradScaler() if cfg.prec == "amp" else None
+        
     def build_criterion(self):
         cfg = self.cfg
         # cls_num_list = torch.Tensor(self.cls_num_list).to(self.device)
@@ -405,18 +700,16 @@ class Trainer:
                 self.criterion = DBLoss(
                         freq_file=freq_file,
                         weight=None, gamma1=4.0, gamma2=0.0,
-                        logit_reg=dict(neg_scale=2.0, init_bias=0.05),
+                        logit_reg=dict(neg_scale=2.0, init_bias=0.05), map_alpha=cfg.map_alpha, map_beta=cfg.map_beta
                     )
             else:
                 freq_file='data/voc/class_freq.pkl'
-                self.criterion = ResampleLoss(
-                    use_sigmoid=True,
-                    reweight_func='rebalance',
-                    focal=dict(focal=True, balance_param=2.0, gamma=2),
-                    logit_reg=dict(neg_scale=5.0, init_bias=0.05),
-                    map_param=dict(alpha=0.1, beta=10.0, gamma=0.3),
-                    loss_weight=1.0, freq_file=freq_file
-                )
+                self.criterion = DBLoss(
+                        freq_file=freq_file,
+                        weight=None, gamma1=4.0, gamma2=0.0,
+                        logit_reg=dict(neg_scale=5.0, init_bias=0.05), map_alpha=cfg.map_alpha, map_beta=cfg.map_beta
+                    )
+                
         
     def build_relation(self):
         prompts = self.get_tokenized_prompts(self.classnames, template = "a photo of a {}.")
@@ -425,6 +718,11 @@ class Trainer:
         self.relation = class_features @ class_features.T
     
     def relation_process(self, cfg):
+        if 'COCO' in cfg.root:
+            prob = torch.Tensor(np.load('cooccurence_coco.npy')).cuda()
+        else:
+            prob = torch.Tensor(np.load('cooccurence_voc.npy')).cuda()
+        self.relation = prob*cfg.wr + (1-cfg.wr) * self.relation
         _ ,max_idx = torch.topk(self.relation, cfg.sparse_topk)
         mask = torch.ones_like(self.relation).type(torch.bool)
         for i, idx in enumerate(max_idx):
@@ -432,6 +730,7 @@ class Trainer:
         self.relation[mask] = 0
         sparse_mask = mask
         dialog = torch.eye(self.num_classes).type(torch.bool)
+        # self.relation = prob*cfg.wr + (1-cfg.wr) * self.relation
         self.relation[dialog] = 0
         self.relation = self.relation / torch.sum(self.relation, dim=1).reshape(-1, 1) * cfg.reweight_p
         self.relation[dialog] = 1-cfg.reweight_p
@@ -551,7 +850,12 @@ class Trainer:
 
         num_epochs = cfg.num_epochs
         for epoch_idx in range(num_epochs):
+            # self.model.train()
             self.tuner.train()
+            if cfg.is_gcn:
+                self.gcn.train()
+            if cfg.is_prompt_tuning:
+                self.prompt.train()
             end = time.time()
 
             num_batches = len(self.train_loader)
@@ -570,14 +874,22 @@ class Trainer:
                 
                 if cfg.prec == "amp":
                     with autocast():
-                        output = self.model(image, return_feature=True, gcn_relation=self.relation)#
+                        output, _ , _= self.model(image, return_feature=True, gcn_relation=self.relation)#
                         loss = self.criterion(output, label)
                         loss_micro = loss / self.accum_step
+                        
                         self.scaler.scale(loss_micro).backward()
+                        
                     if ((batch_idx + 1) % self.accum_step == 0) or (batch_idx + 1 == num_batches):
                         self.scaler.step(self.optim)
+                        if cfg.is_gcn:
+                            self.scaler.step(self.optim_gcn)
                         self.scaler.update()
                         self.optim.zero_grad()
+                        
+                        if cfg.is_gcn:
+                            self.optim_gcn.zero_grad()
+                        
                 else:
                     output = self.model(image)
                     loss = self.criterion(output, label)
@@ -587,28 +899,14 @@ class Trainer:
                         self.optim.step()
                         self.optim.zero_grad()
                 
-                # with torch.no_grad():
-                #     pred = torch.sigmoid(output)
-                #     acc = average_precision_score(label.cpu().detach(), torch.sigmoid(output).cpu().detach())
-                     
-                # with torch.no_grad():
-                #     pred = output.argmax(dim=1)
-                #     correct = pred.eq(label).float()
-                #     acc = correct.mean().mul_(100.0)
 
                 current_lr = self.optim.param_groups[0]["lr"]
+                if cfg.is_gcn:
+                    gcn_lr = self.optim_gcn.param_groups[0]["lr"]
                 loss_meter.update(loss.item())
-                # acc_meter.update(acc.item())
                 batch_time.update(time.time() - end)
-
-                # for _c, _y in zip(correct, label):
-                #     cls_meters[_y].update(_c.mul_(100.0).item(), n=1)
-                # cls_accs = [cls_meters[i].avg for i in range(self.num_classes)]
-
-                # mean_acc = np.mean(np.array(cls_accs))
-                # many_acc = np.mean(np.array(cls_accs)[self.many_idxs])
-                # med_acc = np.mean(np.array(cls_accs)[self.med_idxs])
-                # few_acc = np.mean(np.array(cls_accs)[self.few_idxs])
+                
+                
 
                 meet_freq = (batch_idx + 1) % cfg.print_freq == 0
                 only_few_batches = num_batches < cfg.print_freq
@@ -627,29 +925,29 @@ class Trainer:
                     info += [f"time {batch_time.val:.3f} ({batch_time.avg:.3f})"]
                     info += [f"data {data_time.val:.3f} ({data_time.avg:.3f})"]
                     info += [f"loss {loss_meter.val:.4f} ({loss_meter.avg:.4f})"]
-                    # info += [f"acc {acc_meter.val:.4f} ({acc_meter.avg:.4f})"]
-                    # info += [f"(mean {mean_acc:.4f} many {many_acc:.4f} med {med_acc:.4f} few {few_acc:.4f})"]
                     info += [f"lr {current_lr:.4e}"]
+                    if cfg.is_gcn:
+                        info += [f"gcn_lr {gcn_lr:.4e}"]
                     info += [f"eta {eta}"]
                     print(" ".join(info))
 
                 n_iter = epoch_idx * num_batches + batch_idx
                 self._writer.add_scalar("train/lr", current_lr, n_iter)
+                if cfg.is_gcn:
+                    self._writer.add_scalar("train/gcn_lr", gcn_lr, n_iter)
                 self._writer.add_scalar("train/loss.val", loss_meter.val, n_iter)
                 self._writer.add_scalar("train/loss.avg", loss_meter.avg, n_iter)
-                # self._writer.add_scalar("train/acc.val", acc_meter.val, n_iter)
-                # self._writer.add_scalar("train/acc.avg", acc_meter.avg, n_iter)
-                # self._writer.add_scalar("train/mean_acc", mean_acc, n_iter)
-                # self._writer.add_scalar("train/many_acc", many_acc, n_iter)
-                # self._writer.add_scalar("train/med_acc", med_acc, n_iter)
-                # self._writer.add_scalar("train/few_acc", few_acc, n_iter)
+
                 
                 end = time.time()
+                self.sched.step()
+                
             ########################################### batch end ############################################################ 
-            self.sched.step()
+            if cfg.is_gcn:
+                    self.sched_gcn.step()
             torch.cuda.empty_cache()
             
-            result = self.test()
+            result = self.test(cfg)
             print("mAP:{}".format(result))
 
         print("Finish training")
@@ -664,18 +962,23 @@ class Trainer:
         # save model
         self.save_model(cfg.output_dir)
 
-        result = self.test()
+        result = self.test(cfg)
         print("mAP:{}".format(result))
 
         # Close writer
         self._writer.close()
 
     @torch.no_grad()
-    def test(self, mode="test"):
+    def test(self, cfg, mode="test"):
+        # self.model.eval()
         if self.tuner is not None:
             self.tuner.eval()
         if self.head is not None:
             self.head.eval()
+        if hasattr(self, "gcn"):
+            self.gcn.eval()
+        if self.prompt is not None:
+            self.prompt.eval()
         self.evaluator.reset()
 
         if mode == "train":
@@ -691,13 +994,28 @@ class Trainer:
 
             image = image.to(self.device)
             label = label.to(self.device)
-
+            if cfg.test_ensemble:
+                image_1 = image[:,0,:]
+                image_2 = image[:,1,:]
+                image_3 = image[:,2,:]
+                image_4 = image[:,3,:]
+                image_5 = image[:,4,:]
+                output_1, _ , _ = self.model(image_1,return_feature=True, gcn_relation=self.relation)
+                output_2, _ , _  = self.model(image_2,return_feature=True, gcn_relation=self.relation)
+                output_3, _ , _  = self.model(image_3,return_feature=True, gcn_relation=self.relation)
+                output_4, _ , _  = self.model(image_4,return_feature=True, gcn_relation=self.relation)
+                output_5, _ , _  = self.model(image_5,return_feature=True, gcn_relation=self.relation)
+                output = (output_1 + output_2 + output_3 + output_4 + output_5)/5
             # _bsz, _ncrops, _c, _h, _w = image.size()
             # image = image.view(_bsz * _ncrops, _c, _h, _w)
-
-            output = self.model(image, return_feature=True, gcn_relation=self.relation)
+            else:
+                output, image_features, logit_scale = self.model(image,return_feature=True, gcn_relation=self.relation)
             # output = output.view(_bsz, _ncrops, -1).mean(dim=1)
-
+            # prompts = self.get_tokenized_prompts(self.classnames, template = "a photo of a {}.")
+            # text_features = self.model.encode_text(prompts)
+            # text_features = text_features / text_features.norm(dim=-1,
+            #                                                 keepdim=True)
+            # output = logit_scale * image_features @ text_features.t()
             label, pred = self.evaluator.process(output, label)
 
         # results = self.evaluator.evaluate()
@@ -736,17 +1054,22 @@ class Trainer:
         ap = np.zeros(self.num_classes)
         # compute average precision for each class
         for k in range(self.num_classes):
-            # sort scores
-            scores = preds[:][k]
-            targets = targs[:][k]
-            # compute average precision
-            ap[k] = self.average_precision(scores, targets)
-            ap[k] = average_precision_score(targets, scores)
+            ap[k] = average_precision_score(np.array(targs)[:,k], np.array(preds)[:,k])
+            # # sort scores
+            # scores = preds[:][k]
+            # targets = targs[:][k]
+            # # compute average precision
+            # ap[k] = self.average_precision(scores, targets)
+            # ap[k] = average_precision_score(targets, scores)
         return 100 * ap.mean()
 
     def mAP_hmt(self, targs, preds):
         import mmcv
-        class_freq = np.asarray(mmcv.load('/home/wzz/LMPT/data/voc/class_freq.pkl')['class_freq'])
+        if 'COCO' in self.cfg.root:
+            class_freq = np.asarray(mmcv.load('/home/ubuntu/wzz/qusi/data/coco/class_freq.pkl')['class_freq'])
+        else:
+            class_freq = np.asarray(mmcv.load('/home/ubuntu/wzz/qusi/data/voc/class_freq.pkl')['class_freq'])
+            
         hids = list(np.where(class_freq>=100)[0])
         mids = list(np.where((class_freq<100) * (class_freq >= 20))[0])
         tids = list(np.where(class_freq<20)[0])
@@ -756,11 +1079,12 @@ class Trainer:
         ap = np.zeros(self.num_classes)
         # compute average precision for each class
         for k in range(self.num_classes):
-            # sort scores
-            scores = preds[:][k]
-            targets = targs[:][k]
-            # compute average precision
-            ap[k] = self.average_precision(scores, targets)
+            ap[k] = average_precision_score(np.array(targs)[:,k], np.array(preds)[:,k])
+            # # sort scores
+            # scores = preds[:][k]
+            # targets = targs[:][k]
+            # # compute average precision
+            # ap[k] = self.average_precision(scores, targets)
         print(f'mAP head: {ap[hids].mean()}, mAP medium: {ap[mids].mean()}, mAP tail: {ap[tids].mean()}')
         
     def save_model(self, directory):
@@ -799,6 +1123,36 @@ class Trainer:
         print("Loading weights to from {}".format(load_path))
         self.tuner.load_state_dict(tuner_dict)
         self.head.load_state_dict(head_dict)
+
+
+    def consistency_loss(self, cfg, logits_s, logits_w, y_lb, weight):
+        logits_w = logits_w.detach()
+
+        pseudo_label = torch.sigmoid(logits_w)
+        pseudo_label_s = torch.sigmoid(logits_s)
+
+        relation_p = pseudo_label @ self.relation.cuda().t()
+        pos_mask = relation_p * y_lb
+        neg_mask = (1-relation_p) * (1 - y_lb)
+        mask_probs = pos_mask + neg_mask
+        if 'COCO' in cfg.root:
+            freq_file ='/home/ubuntu/wzz/qusi/data/coco/class_freq.pkl'
+        else:
+            freq_file ='/home/ubuntu/wzz/qusi/data/voc/class_freq.pkl'
+        temp = torch.from_numpy(np.asarray(mmcv.load(freq_file)['class_freq'])).to(torch.float32).cuda()
+        weight =  (1 / temp) ** 1 / torch.sum((1 / temp) ** 1)        
+        pos_mask_s = pseudo_label_s * y_lb
+        neg_mask_s = (1-pseudo_label_s) * (1 - y_lb)
+        mask_probs_s = pos_mask_s + neg_mask_s
+        # from sklearn.metrics import average_precision_score, roc_auc_score
+        # from utils import average_precision
+        mask = mask_probs.ge(0.5).float().sum(dim=1) >= mask_probs_s.ge(0.5).float().sum(dim=1)  # convex 样本中有其中一个类大于阈值时，则选中样本
+        # a = roc_auc_score(np.array(y_lb.cpu()), np.array(relation_p.cpu()), average=None)
+        xs_pos = pseudo_label_s
+        xs_neg = 1 - pseudo_label_s
+        loss_kl = weight * (relation_p * torch.log(xs_pos.clamp(min=1e-8)) + (1 - relation_p) * torch.log(xs_neg.clamp(min=1e-8))) * mask.reshape(-1, 1)
+        return  - cfg.kl_lambda * loss_kl.sum() 
+
 
 # class Trainer:
 #     def __init__(self, cfg):

@@ -10,20 +10,22 @@ _C.data_path_val = ""
 _C.data_path_train = ""
 _C.imb_factor = None  # for long-tailed cifar dataset
 
+_C.wr = 0.5
 _C.n_ctx = 4
 _C.ctx_init = "a photo of a"
 _C.backbone = ""
 _C.resolution = 224
-
+_C.is_prompt_tuning = False
 _C.output_dir = None  # Directory to save the output files (like log.txt and model weights)
 _C.print_freq = 10  # How often (batch) to print training information
-
+_C.map_alpha = 0.5
+_C.map_beta = 0.1
 _C.seed = None  # use manual seed
 _C.deterministic = False  # output deterministic results
 _C.gpu = None  # assign a single gpu 
 _C.num_workers = 20
 _C.prec = "fp16"  # fp16, fp32, amp
-
+_C.kl_lambda = 0.2
 _C.num_epochs = 10
 _C.batch_size = 128
 _C.micro_batch_size = 128  # for gradient accumulation, must be a divisor of batch size

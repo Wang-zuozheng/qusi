@@ -27,6 +27,7 @@ class Evaluator:
     def process(self, mo, gt):
         # mo (torch.Tensor): model output [batch, num_classes]
         # gt (torch.LongTensor): ground truth [batch]
+        # pred = torch.softmax(mo, dim=1)
         pred = torch.sigmoid(mo)
         conf = pred
         # pred = mo.max(1)[1]

@@ -10,19 +10,33 @@ gpu: 0
 num_workers: 8
 prec: "amp"
 
-num_epochs: 10
-batch_size: 128
-micro_batch_size: 128
-lr: 0.01
-weight_decay: 5e-4
+num_epochs: 60
+batch_size: 32
+micro_batch_size: 32
+lr: 5e-4
+weight_decay: 1e-4
 momentum: 0.9
-loss_type: "LA"
+loss_type: "DBLoss"
 classifier: "CosineClassifier"
 
-bias_tuning: True
+full_tuning: True
+bias_tuning: False
 bn_tuning: False
 ssf_attn: False
 
 init_head: "text_feat"
-test_ensemble: True
+test_ensemble: False
 expand: 24
+
+is_gcn: False
+in_features: 1024
+mid_features: 2048
+n_ctx: 4
+ctx_init: a photo of a
+is_prompt_tuning: False
+sparse_topk: 60
+reweight_p: 0.2
+T: 0.3
+map_alpha: 0.5
+map_beta: 0.1
+kl_lambda: 0.2
